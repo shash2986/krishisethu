@@ -8,7 +8,9 @@ import {
   Paperclip,
   Smile,
   MapPin,
-  Shield
+  Shield,
+  Image as ImageIcon,
+  IndianRupee as Rupee
 } from 'lucide-react';
 import { Message, User } from '../../types';
 
@@ -17,6 +19,8 @@ interface EnhancedChatInterfaceProps {
   otherUser: User;
   messages: Message[];
   onSendMessage: (content: string) => void;
+  onSendImage?: (imageUrl: string) => void;
+  onSendPriceOffer?: (amount: number, message: string) => void;
   onBack?: () => void;
 }
 
@@ -25,10 +29,15 @@ const EnhancedChatInterface: React.FC<EnhancedChatInterfaceProps> = ({
   otherUser,
   messages,
   onSendMessage,
+  onSendImage,
+  onSendPriceOffer,
   onBack
 }) => {
   const [newMessage, setNewMessage] = useState('');
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [showPriceOffer, setShowPriceOffer] = useState(false);
+  const [offerAmount, setOfferAmount] = useState('');
+  const [offerMessage, setOfferMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -64,11 +73,29 @@ const EnhancedChatInterface: React.FC<EnhancedChatInterfaceProps> = ({
     'हाँ, मुझे रुचि है / Yes, I am interested',
     'कीमत क्या है? / What is the price?',
     'कब मिल सकते हैं? / When can we meet?',
+    'क्या आप बातचीत कर सकते हैं? / Can you negotiate?',
+    'मैं एक प्रस्ताव भेजूंगा / I will send an offer',
     'धन्यवाद / Thank you',
     'ठीक है / Okay',
     'कल बात करते हैं / Let\'s talk tomorrow'
   ];
 
+  const handleImageCapture = () => {
+    // Simulate image capture
+    const dummyImageUrl = 'https://images.pexels.com/photos/1656663/pexels-photo-1656663.jpeg';
+    if (onSendImage) {
+      onSendImage(dummyImageUrl);
+    }
+  };
+
+  const handleSendPriceOffer = () => {
+    if (offerAmount && onSendPriceOffer) {
+      onSendPriceOffer(parseFloat(offerAmount), offerMessage || 'Price offer');
+      setOfferAmount('');
+      setOfferMessage('');
+      setShowPriceOffer(false);
+    }
+  };
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
@@ -146,7 +173,27 @@ const EnhancedChatInterface: React.FC<EnhancedChatInterfaceProps> = ({
                         : 'bg-white text-gray-800 rounded-bl-md border border-gray-200'
                     }`}
                   >
-                    <p className="break-words">{message.content}</p>
+                    {message.content.startsWith('PRICE_OFFER:') ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Rupee size={16} />
+                          <span className="font-semibold">Price Offer</span>
+                        </div>
+                        <p className="text-lg font-bold">₹{message.content.split(':')[1]}</p>
+                        <p className="text-sm opacity-90">{message.content.split(':')[2] || 'Price negotiation'}</p>
+                      </div>
+                    ) : message.content.startsWith('IMAGE:') ? (
+                      <div className="space-y-2">
+                        <img 
+                          src={message.content.split(':')[1]} 
+                          alt="Shared image" 
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                        <p className="text-sm opacity-90">Shared an image</p>
+                      </div>
+                    ) : (
+                      <p className="break-words">{message.content}</p>
+                    )}
                   </div>
                   <div className={`flex items-center mt-1 space-x-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                     <p className="text-xs text-gray-500">{formatTime(message.timestamp)}</p>
@@ -191,18 +238,75 @@ const EnhancedChatInterface: React.FC<EnhancedChatInterfaceProps> = ({
         </div>
       )}
 
+      {/* Price Offer Modal */}
+      {showPriceOffer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">मूल्य प्रस्ताव भेजें</h3>
+            <p className="text-sm text-gray-600 mb-4">Send Price Offer</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  प्रस्तावित मूल्य / Offered Price
+                </label>
+                <div className="relative">
+                  <Rupee size={18} className="absolute left-3 top-3 text-gray-400" />
+                  <input
+                    type="number"
+                    value={offerAmount}
+                    onChange={(e) => setOfferAmount(e.target.value)}
+                    placeholder="0"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  संदेश / Message (Optional)
+                </label>
+                <textarea
+                  value={offerMessage}
+                  onChange={(e) => setOfferMessage(e.target.value)}
+                  placeholder="कोई अतिरिक्त जानकारी..."
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent h-16 resize-none"
+                />
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowPriceOffer(false)}
+                  className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  रद्द करें / Cancel
+                </button>
+                
+                <button
+                  onClick={handleSendPriceOffer}
+                  className="flex-1 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+                >
+                  भेजें / Send
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Message Input */}
       <div className="bg-white border-t border-gray-200 p-4">
         <form onSubmit={handleSend} className="flex items-end space-x-2">
           <div className="flex space-x-2">
             <button
               type="button"
+              onClick={() => setShowPriceOffer(true)}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
             >
-              <Paperclip size={20} />
+              <Rupee size={20} />
             </button>
             <button
               type="button"
+              onClick={handleImageCapture}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
             >
               <Camera size={20} />

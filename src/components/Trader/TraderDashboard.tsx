@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { Package, TrendingUp, Clock, CheckCircle, Eye, MessageCircle } from 'lucide-react';
 import { Produce, Transaction } from '../../types';
 
 interface TraderDashboardProps {

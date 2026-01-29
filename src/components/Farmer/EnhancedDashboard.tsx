@@ -22,6 +22,7 @@ interface EnhancedDashboardProps {
   onViewPrices: () => void;
   onViewSchemes: () => void;
   onViewTraders: () => void;
+  onViewBids: (produce: Produce) => void;
 }
 
 const EnhancedDashboard: React.FC<EnhancedDashboardProps> = ({ 
@@ -32,6 +33,7 @@ const EnhancedDashboard: React.FC<EnhancedDashboardProps> = ({
   onViewPrices,
   onViewSchemes,
   onViewTraders
+  onViewBids
 }) => {
   const activeProduces = produces.filter(p => p.status === 'active');
   const totalBids = produces.reduce((sum, p) => sum + p.bids.length, 0);
@@ -240,7 +242,12 @@ const EnhancedDashboard: React.FC<EnhancedDashboardProps> = ({
                   <div className="text-right">
                     <p className="font-semibold text-green-600">₹{produce.currentPrice}</p>
                     <div className="flex items-center space-x-1">
-                      <span className="text-sm text-gray-500">{produce.bids.length} bids</span>
+                      <button
+                        onClick={() => onViewBids(produce)}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        {produce.bids.length} bids
+                      </button>
                       {produce.bids.length > 0 && (
                         <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                       )}
